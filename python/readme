@@ -1,5 +1,10 @@
 h1. this tool is used to control remote machine
 
+h1. required packages
+
+> python 2.6 or higher
+> paramkio (yum install python-dev && easy_install paramiko)
+
 h1 .the usage as follows:
 
 <pre>
