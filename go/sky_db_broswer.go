@@ -14,6 +14,7 @@ import (
 
 	"github.com/boltdb/bolt"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/visor"
 	//"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
@@ -252,8 +253,8 @@ func getUxouts(db *bolt.DB) {
 				return err
 			}
 
-			//fmt.Printf("k=%+v, v=%+v\n", hex.EncodeToString(k[:]), &out)
-			fmt.Printf("k=%+v, v=%+v, spendid=%+v\n", out.Out.Body.Address, out.Out.Body.Coins, out.SpentBlockSeq)
+			fmt.Printf("k=%+v, v=%+v\n", hex.EncodeToString(k[:]), &out)
+			fmt.Printf("k=%+v, v=%+v, spend block seq=%+v\n", out.Out.Body.Address, out.Out.Body.Coins, out.SpentBlockSeq)
 
 			return nil
 		})
@@ -277,6 +278,7 @@ func getUnspentPool(db *bolt.DB) {
 			}
 
 			fmt.Printf("k=%+v, v=%+v\n", hex.EncodeToString(k[:]), &out)
+			fmt.Printf("k=%+v, v=%+v\n", hex.EncodeToString(k[:]), out.Body.SrcTransaction.Hex())
 
 			return nil
 		})
@@ -293,7 +295,21 @@ func getUnconfirmedTxns(db *bolt.DB) {
 		fmt.Printf("bucket-name: %s\n", bucketname)
 
 		b.ForEach(func(k, v []byte) error {
-			fmt.Printf("k=%+v, v=%+v\n", k, v)
+			var tx visor.UnconfirmedTxn
+			if err := encoder.DeserializeRaw(v, &tx); err != nil {
+				return err
+			}
+			//fmt.Printf("k=%+v\n", cipher.MustSHA256FromHex(string(k)).Hex())
+			//fmt.Printf("k=%+v\n", string(k))
+			fmt.Printf("k=%+v, v=%+v\n", tx.Hash().Hex(), tx)
+			fmt.Printf("txid %+v\n", tx.Txn.TxIDHex())
+			fmt.Printf("innerhash %+v\n", tx.Txn.InnerHash.Hex())
+			for i, _ := range tx.Txn.In {
+				fmt.Printf("in-uxid %d: %+v\n", i, tx.Txn.In[i].Hex())
+			}
+			for i, _ := range tx.Txn.Out {
+				fmt.Printf("out-uxinfo %d: %+v\n", i, tx.Txn.Out[i])
+			}
 
 			return nil
 		})
@@ -424,6 +440,7 @@ func getUnconfirmedUnspents(db *bolt.DB) {
 				return err
 			}
 			fmt.Printf("k=%+v, v=%+v\n", string(k), uxArray)
+			fmt.Printf("k=%+v, src_txid=%+v\n", string(k), uxArray[0].Body.SrcTransaction.Hex())
 
 			return nil
 		})
